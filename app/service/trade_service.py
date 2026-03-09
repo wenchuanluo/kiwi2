@@ -22,50 +22,61 @@ def execute_purchase_order(portfolio_id: int, ticker: str, quantity: int):
         quantity (int): The number of shares to purchase.
 
     Raises:
-        TradeExecutionException: If there is an error during the trade execution.
+        TradeExecutionException: If the order parameters are invalid, or related
+            portfolio/user/security records do not exist.
         InsufficientFundsError: If the user has insufficient funds to complete the purchase.
     """
-    try:
-        if portfolio_id is None or not ticker or not quantity or quantity <= 0:
-            raise TradeExecutionException(
-                f'Invalid purchase order parameters [portfolio_id={portfolio_id}, ticker={ticker}, quantity={quantity}]'
-            )
-        portfolio = db.session.query(Portfolio).filter_by(id=portfolio_id).one_or_none()
-        if not portfolio:
-            raise TradeExecutionException(f'Portfolio with id {portfolio_id} does not exist.')
-        user = portfolio.user
-        if not user:
-            raise TradeExecutionException(f'User associated with the portfolio ({portfolio_id}) does not exist.')
 
-        security = db.session.query(Security).filter_by(ticker=ticker).one_or_none()
-        if not security:
-            raise TradeExecutionException(f'Security with ticker {ticker} does not exist.')
-        total_cost = security.price * quantity
-        if user.balance < total_cost:
-            raise InsufficientFundsError('Insufficient funds to complete the purchase.')
+    # CHANGED: removed outer try/except so exceptions bubble up naturally
+    if portfolio_id is None or not ticker or not quantity or quantity <= 0:
+        raise TradeExecutionException(
+            f"Invalid purchase order parameters [portfolio_id={portfolio_id}, ticker={ticker}, quantity={quantity}]"
+        )
 
-        existing_investment = next((inv for inv in portfolio.investments if inv.ticker == ticker), None)
-        if existing_investment:
-            existing_investment.quantity += quantity
-        else:
-            portfolio.investments.append(Investment(ticker=ticker, quantity=quantity, security=security))
+    portfolio = db.session.query(Portfolio).filter_by(id=portfolio_id).one_or_none()
+    if not portfolio:
+        raise TradeExecutionException(f"Portfolio with id {portfolio_id} does not exist.")
 
-        user.balance -= total_cost
-        db.session.add(
-            Transaction(
-                portfolio_id=portfolio.id,
-                username=user.username,
+    user = portfolio.user
+    if not user:
+        raise TradeExecutionException(f"User associated with the portfolio ({portfolio_id}) does not exist.")
+
+    security = db.session.query(Security).filter_by(ticker=ticker).one_or_none()
+    if not security:
+        raise TradeExecutionException(f"Security with ticker {ticker} does not exist.")
+
+    total_cost = security.price * quantity
+    if user.balance < total_cost:
+        raise InsufficientFundsError("Insufficient funds to complete the purchase.")
+
+    existing_investment = next((inv for inv in portfolio.investments if inv.ticker == ticker), None)
+    if existing_investment:
+        existing_investment.quantity += quantity
+    else:
+        portfolio.investments.append(
+            Investment(
                 ticker=ticker,
                 quantity=quantity,
-                price=security.price,
-                transaction_type='BUY',
-                date_time=datetime.datetime.now(),
+                security=security,
             )
         )
-        db.session.flush()
-    except Exception as e:
-        db.session.rollback()
-        raise TradeExecutionException(f'Failed to execute purchase order due to error: {str(e)}')
+
+    user.balance -= total_cost
+
+    db.session.add(
+        Transaction(
+            portfolio_id=portfolio.id,
+            username=user.username,
+            ticker=ticker,
+            quantity=quantity,
+            price=security.price,
+            transaction_type="BUY",
+            date_time=datetime.datetime.now(),
+        )
+    )
+
+    # CHANGED: kept flush for now; no commit/rollback in service
+    db.session.flush()
 
 
 def liquidate_investment(portfolio_id: int, ticker: str, quantity: int, sale_price: float):
@@ -79,44 +90,60 @@ def liquidate_investment(portfolio_id: int, ticker: str, quantity: int, sale_pri
         sale_price (float): The price per share to use for the sale.
 
     Raises:
-        TradeExecutionException: If the portfolio, investment, or quantity is invalid,
-            or if a database error occurs while recording the sale.
+        TradeExecutionException: If the portfolio, investment, or quantity is invalid.
     """
-    try:
-        portfolio = db.session.query(Portfolio).filter_by(id=portfolio_id).one_or_none()
-        if not portfolio:
-            raise TradeExecutionException(f'Portfolio with id {portfolio_id} does not exist')
-        user = portfolio.user
-        investment = next(
-            (inv for inv in portfolio.investments if inv.security.ticker == ticker),
-            None,
+
+    # CHANGED: removed outer try/except so exceptions bubble up naturally
+    if portfolio_id is None or not ticker or not quantity or quantity <= 0:
+        raise TradeExecutionException(
+            f"Invalid liquidation parameters [portfolio_id={portfolio_id}, ticker={ticker}, quantity={quantity}]"
         )
-        if not investment:
-            raise TradeExecutionException(
-                f'No investment with ticker {ticker} exists in portfolio with id {portfolio_id}'
-            )
-        if investment.quantity < quantity:
-            raise TradeExecutionException(
-                f'Cannot liquidate {quantity} shares of {ticker}. Only {investment.quantity} shares available in portfolio'
-            )
-        total_proceeds = sale_price * quantity
-        user.balance += total_proceeds
-        if investment.quantity == quantity:
-            db.session.delete(investment)
-        else:
-            investment.quantity -= quantity
-        db.session.add(
-            Transaction(
-                portfolio_id=portfolio.id,
-                username=user.username,
-                ticker=ticker,
-                quantity=quantity,
-                price=sale_price,
-                transaction_type='SELL',
-                date_time=datetime.datetime.now(),
-            )
+
+    if sale_price is None or sale_price <= 0:
+        raise TradeExecutionException(f"Invalid sale price: {sale_price}")
+
+    portfolio = db.session.query(Portfolio).filter_by(id=portfolio_id).one_or_none()
+    if not portfolio:
+        raise TradeExecutionException(f"Portfolio with id {portfolio_id} does not exist")
+
+    user = portfolio.user
+    if not user:
+        raise TradeExecutionException(f"User associated with the portfolio ({portfolio_id}) does not exist.")
+
+    investment = next(
+        (inv for inv in portfolio.investments if inv.security.ticker == ticker),
+        None,
+    )
+    if not investment:
+        raise TradeExecutionException(
+            f"No investment with ticker {ticker} exists in portfolio with id {portfolio_id}"
         )
-        db.session.flush()
-    except Exception as e:
-        db.session.rollback()
-        raise TradeExecutionException(f'Failed to liquidate investment due to error: {str(e)}')
+
+    if investment.quantity < quantity:
+        raise TradeExecutionException(
+            f"Cannot liquidate {quantity} shares of {ticker}. "
+            f"Only {investment.quantity} shares available in portfolio"
+        )
+
+    total_proceeds = sale_price * quantity
+    user.balance += total_proceeds
+
+    if investment.quantity == quantity:
+        db.session.delete(investment)
+    else:
+        investment.quantity -= quantity
+
+    db.session.add(
+        Transaction(
+            portfolio_id=portfolio.id,
+            username=user.username,
+            ticker=ticker,
+            quantity=quantity,
+            price=sale_price,
+            transaction_type="SELL",
+            date_time=datetime.datetime.now(),
+        )
+    )
+
+    # CHANGED: kept flush for now; no commit/rollback in service
+    db.session.flush()
