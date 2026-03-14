@@ -27,7 +27,7 @@ def execute_purchase_order(portfolio_id: int, ticker: str, quantity: int):
         InsufficientFundsError: If the user has insufficient funds to complete the purchase.
     """
 
-    # CHANGED: removed outer try/except so exceptions bubble up naturally
+    
     if portfolio_id is None or not ticker or not quantity or quantity <= 0:
         raise TradeExecutionException(
             f"Invalid purchase order parameters [portfolio_id={portfolio_id}, ticker={ticker}, quantity={quantity}]"
@@ -75,7 +75,7 @@ def execute_purchase_order(portfolio_id: int, ticker: str, quantity: int):
         )
     )
 
-    # CHANGED: kept flush for now; no commit/rollback in service
+    
     db.session.flush()
 
 
@@ -93,7 +93,7 @@ def liquidate_investment(portfolio_id: int, ticker: str, quantity: int, sale_pri
         TradeExecutionException: If the portfolio, investment, or quantity is invalid.
     """
 
-    # CHANGED: removed outer try/except so exceptions bubble up naturally
+    
     if portfolio_id is None or not ticker or not quantity or quantity <= 0:
         raise TradeExecutionException(
             f"Invalid liquidation parameters [portfolio_id={portfolio_id}, ticker={ticker}, quantity={quantity}]"
@@ -145,5 +145,5 @@ def liquidate_investment(portfolio_id: int, ticker: str, quantity: int, sale_pri
         )
     )
 
-    # CHANGED: kept flush for now; no commit/rollback in service
+    
     db.session.flush()
