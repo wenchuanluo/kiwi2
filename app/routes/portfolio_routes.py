@@ -4,6 +4,7 @@ import app.service.portfolio_service as portfolio_service
 import app.service.transaction_service as transaction_service
 import app.service.user_service as user_service
 from app.db import db
+from app.routes.domain.portfolio_schema import CreatePortfolioRequest
 
 portfolio_bp = Blueprint('portfolio', __name__)
 
@@ -33,18 +34,21 @@ def get_portfolios_by_user(username):
 
 @portfolio_bp.route('/', methods=['POST'])
 def create_portfolio():
-    req_data = request.get_json()
-    username = req_data['username']
-    user = user_service.get_user_by_username(username)
+    data = CreatePortfolioRequest(**request.get_json())
+
+    user = user_service.get_user_by_username(data.username)
     if user is None:
-        return jsonify({'error': f'User {username} not found'}), 404
+        return jsonify({"error": f"User {data.username} not found"}), 404
+
     portfolio_id = portfolio_service.create_portfolio(
-        name=req_data['name'],
-        description=req_data['description'],
+        name=data.name,
+        description=data.description,
         user=user,
     )
     db.session.commit()
-    return jsonify({'message': 'Portfolio created successfully', 'portfolio_id': portfolio_id}), 201
+    return jsonify(
+        {"message": "Portfolio created successfully", "portfolio_id": portfolio_id}
+    ), 201
 
 
 @portfolio_bp.route('/<int:portfolio_id>', methods=['DELETE'])

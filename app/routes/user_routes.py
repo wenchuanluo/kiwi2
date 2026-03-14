@@ -3,6 +3,7 @@ from flask import Blueprint, jsonify, request
 import app.service.transaction_service as transaction_service
 import app.service.user_service as user_service
 from app.db import db
+from app.routes.domain.user_schema import CreateUserRequest, UpdateUserBalanceRequest
 
 user_bp = Blueprint('user', __name__)
 
@@ -23,14 +24,14 @@ def get_user(username):
 
 @user_bp.route('/', methods=['POST'])
 def create_user():
-    req_data = request.get_json()
-    username = req_data['username']
-    password = req_data['password']
-    firstname = req_data['firstname']
-    lastname = req_data['lastname']
-    balance = req_data['balance']
+    data = CreateUserRequest(**request.get_json())
+
     user_service.create_user(
-        username=username, password=password, firstname=firstname, lastname=lastname, balance=balance
+        username=data.username,
+        password=data.password,
+        firstname=data.firstname,
+        lastname=data.lastname,
+        balance=data.balance,
     )
     db.session.commit()
     return jsonify({'message': 'User created successfully'}), 201
@@ -38,10 +39,12 @@ def create_user():
 
 @user_bp.route('/update-balance', methods=['PUT'])
 def update_balance():
-    req_data = request.get_json()
-    username = req_data['username']
-    new_balance = req_data['new_balance']
-    user_service.update_user_balance(username=username, new_balance=new_balance)
+    data = UpdateUserBalanceRequest(**request.get_json())
+
+    user_service.update_user_balance(
+        username=data.username,
+        new_balance=data.new_balance,
+    )
     db.session.commit()
     return jsonify({'message': 'User balance updated successfully'}), 200
 

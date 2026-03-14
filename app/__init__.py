@@ -21,7 +21,7 @@ def create_app(config):
     app.register_blueprint(user_bp, url_prefix="/users")
     app.register_blueprint(portfolio_bp, url_prefix="/portfolios")
     app.register_blueprint(security_bp, url_prefix="/securities")
-    app.register_blueprint(trade_bp, url_prefix="/trades")
+    app.register_blueprint(trade_bp, url_prefix="/trade")
 
     # CHANGED: added centralized error handler for user-related business errors
     @app.errorhandler(UnsupportedUserOperationError)
