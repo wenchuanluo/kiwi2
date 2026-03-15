@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 
+from app.auth import require_auth
 import app.service.transaction_service as transaction_service
 import app.service.user_service as user_service
 from app.db import db
@@ -9,12 +10,14 @@ user_bp = Blueprint('user', __name__)
 
 
 @user_bp.route('/', methods=['GET'])
+@require_auth
 def get_users():
     users = user_service.get_all_users()
     return jsonify([user.__to_dict__() for user in users]), 200
 
 
 @user_bp.route('/<username>', methods=['GET'])
+@require_auth
 def get_user(username):
     user = user_service.get_user_by_username(username)
     if user is None:
@@ -23,6 +26,7 @@ def get_user(username):
 
 
 @user_bp.route('/', methods=['POST'])
+@require_auth
 def create_user():
     data = CreateUserRequest(**request.get_json())
 
@@ -38,6 +42,7 @@ def create_user():
 
 
 @user_bp.route('/update-balance', methods=['PUT'])
+@require_auth
 def update_balance():
     data = UpdateUserBalanceRequest(**request.get_json())
 
@@ -50,6 +55,7 @@ def update_balance():
 
 
 @user_bp.route('/<username>', methods=['DELETE'])
+@require_auth
 def delete_user(username):
     user_service.delete_user(username)
     db.session.commit()
@@ -57,6 +63,7 @@ def delete_user(username):
 
 
 @user_bp.route('/<username>/transactions', methods=['GET'])
+@require_auth
 def get_user_transactions(username):
     transactions = transaction_service.get_transactions_by_user(username)
     return jsonify([transaction.__to_dict__() for transaction in transactions]), 200

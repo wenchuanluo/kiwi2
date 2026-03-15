@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 
+from app.auth import require_auth
 from app.db import db
 from app.routes.domain.trade_schema import BuyTradeRequest, SellTradeRequest
 from app.service import trade_service
@@ -8,6 +9,7 @@ trade_bp = Blueprint("trade", __name__)
 
 
 @trade_bp.route("/buy", methods=["POST"])
+@require_auth
 def execute_purchase_order():
     data = BuyTradeRequest(**request.get_json())
 
@@ -22,6 +24,7 @@ def execute_purchase_order():
 
 
 @trade_bp.route("/sell", methods=["POST"])
+@require_auth
 def liquidate_investment():
     data = SellTradeRequest(**request.get_json())
 
