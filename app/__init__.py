@@ -1,12 +1,13 @@
 from flask import Flask, jsonify
 from pydantic import ValidationError
 from werkzeug.exceptions import HTTPException
-
+import logging
+import sys
+from logging.handlers import RotatingFileHandler
 from app.db import db
-from app.routes import portfolio_bp, security_bp, trade_bp, user_bp
-from app.service.portfolio_service import UnsupportedPortfolioOperationError
-from app.service.trade_service import InsufficientFundsError, TradeExecutionException
-from app.service.user_service import UnsupportedUserOperationError
+from flask_caching import Cache
+
+cache = Cache()
 
 
 def create_app(config):
@@ -16,6 +17,28 @@ def create_app(config):
 
     # register extensions
     db.init_app(app)
+    cache.init_app(app, config={
+    "CACHE_TYPE": "SimpleCache",
+    "CACHE_DEFAULT_TIMEOUT": 300
+    })
+    from app.routes import portfolio_bp, security_bp, trade_bp, user_bp
+    from app.service.portfolio_service import UnsupportedPortfolioOperationError
+    from app.service.trade_service import InsufficientFundsError, TradeExecutionException
+    from app.service.user_service import UnsupportedUserOperationError
+    
+    if app.debug or app.testing:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setLevel(logging.DEBUG)
+    else:
+        handler = RotatingFileHandler('app.log', maxBytes=100000, backupCount=10)
+        handler.setLevel(logging.INFO)
+
+    formatter = logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(module)s:%(lineno)d]'
+    )
+    handler.setFormatter(formatter)
+    app.logger.addHandler(handler)
+    app.logger.setLevel(logging.INFO)
 
     # register blueprints
     app.register_blueprint(user_bp, url_prefix="/users")

@@ -1,8 +1,9 @@
 from dataclasses import dataclass
-import time
+
 import requests
 from flask import current_app
 
+from app import cache
 
 BASE_URL = "https://www.alphavantage.co/query"
 
@@ -40,6 +41,13 @@ def get_price_data(ticker: str) -> dict | None:
 
     Returns None if data is unavailable or the ticker cannot be resolved.
     """
+    cache_key = f"price_data:{ticker}"
+
+    cached_value = cache.get(cache_key)
+    if cached_value is not None:
+        current_app.logger.info(f"Price data for {ticker} found in cache.")
+        return cached_value
+
     api_key = _get_api_key()
     url = BASE_URL
 
@@ -69,7 +77,7 @@ def get_price_data(ticker: str) -> dict | None:
             current_app.logger.error(f"Missing required price fields for ticker: {ticker}")
             return None
 
-        return {
+        price_data = {
             "price": float(price),
             "date": date,
             "open": float(quote_data.get("02. open", 0.0)),
@@ -77,6 +85,9 @@ def get_price_data(ticker: str) -> dict | None:
             "low": float(quote_data.get("04. low", 0.0)),
             "volume": int(float(quote_data.get("06. volume", 0))),
         }
+
+        cache.set(cache_key, price_data)
+        return price_data
 
     except requests.RequestException as error:
         current_app.logger.error(
@@ -96,6 +107,13 @@ def get_company_name(ticker: str) -> str | None:
 
     Returns the company name as a string, or None if no match is found.
     """
+    cache_key = f"company_name:{ticker}"
+
+    cached_value = cache.get(cache_key)
+    if cached_value is not None:
+        current_app.logger.info(f"Company name for {ticker} found in cache.")
+        return cached_value
+
     api_key = _get_api_key()
     url = BASE_URL
 
@@ -124,6 +142,7 @@ def get_company_name(ticker: str) -> str | None:
             current_app.logger.error(f"Missing company name in API response for ticker: {ticker}")
             return None
 
+        cache.set(cache_key, company_name)
         return company_name
 
     except requests.RequestException as error:
@@ -141,7 +160,6 @@ def get_quote(ticker: str) -> SecurityQuote | None:
     Returns None if the ticker cannot be resolved.
     """
     company_name = get_company_name(ticker)
-    time.sleep(1.1)
     price_data = get_price_data(ticker)
 
     if company_name is None or price_data is None:
@@ -151,5 +169,5 @@ def get_quote(ticker: str) -> SecurityQuote | None:
         ticker=ticker,
         date=price_data.get("date"),
         price=price_data.get("price"),
-        issuer=company_name or "Unknown Issuer",
+        issuer=company_name,
     )
