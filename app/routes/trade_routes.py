@@ -1,5 +1,7 @@
 from flask import Blueprint, jsonify, request
-
+from flask import g
+import app.service.portfolio_service as portfolio_service
+from app.service.portfolio_service import ensure_can_manage_portfolio
 from app.auth import require_auth
 from app.db import db
 from app.routes.domain.trade_schema import BuyTradeRequest, SellTradeRequest
@@ -13,6 +15,13 @@ trade_bp = Blueprint("trade", __name__)
 def execute_purchase_order():
     data = BuyTradeRequest(**request.get_json())
 
+    portfolio = portfolio_service.get_portfolio_by_id(data.portfolio_id)
+
+    if portfolio is None:
+        return jsonify({"error": f"Portfolio {data.portfolio_id} not found"}), 404
+
+    ensure_can_manage_portfolio(portfolio, g.current_user)
+
     trade_service.execute_purchase_order(
         portfolio_id=data.portfolio_id,
         ticker=data.ticker,
@@ -20,6 +29,7 @@ def execute_purchase_order():
     )
 
     db.session.commit()
+
     return jsonify({"message": "Purchase order executed successfully"}), 201
 
 
@@ -28,6 +38,13 @@ def execute_purchase_order():
 def liquidate_investment():
     data = SellTradeRequest(**request.get_json())
 
+    portfolio = portfolio_service.get_portfolio_by_id(data.portfolio_id)
+
+    if portfolio is None:
+        return jsonify({"error": f"Portfolio {data.portfolio_id} not found"}), 404
+
+    ensure_can_manage_portfolio(portfolio, g.current_user)
+
     trade_service.liquidate_investment(
         portfolio_id=data.portfolio_id,
         ticker=data.ticker,
@@ -35,4 +52,5 @@ def liquidate_investment():
     )
 
     db.session.commit()
+
     return jsonify({"message": "Investment liquidated successfully"}), 200

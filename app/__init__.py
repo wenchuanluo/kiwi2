@@ -22,7 +22,9 @@ def create_app(config):
     "CACHE_DEFAULT_TIMEOUT": 300
     })
     from app.routes import portfolio_bp, security_bp, trade_bp, user_bp
-    from app.service.portfolio_service import UnsupportedPortfolioOperationError
+    from app.service.portfolio_service import (
+    UnsupportedPortfolioOperationError,
+    PortfolioAuthorizationError,)
     from app.service.trade_service import InsufficientFundsError, TradeExecutionException
     from app.service.user_service import UnsupportedUserOperationError
     
@@ -107,5 +109,13 @@ def create_app(config):
             "error": "Internal Server Error",
             "detail": str(error),
         }), 500
+        
+    @app.errorhandler(PortfolioAuthorizationError)
+    def handle_portfolio_authorization_error(error):
+        db.session.rollback()
+        return jsonify({
+            "error": "Forbidden",
+            "detail": str(error),
+        }), 403
 
     return app
