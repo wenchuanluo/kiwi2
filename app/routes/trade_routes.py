@@ -1,34 +1,35 @@
 from flask import Blueprint, jsonify, request
 
 from app.db import db
-from app.service import trade_service
 from app.routes.domain.trade_schema import BuyTradeRequest, SellTradeRequest
+from app.service import trade_service
 
-trade_bp = Blueprint('trade', __name__)
+trade_bp = Blueprint("trade", __name__)
 
 
-@trade_bp.route('/buy', methods=['POST'])
+@trade_bp.route("/buy", methods=["POST"])
 def execute_purchase_order():
     data = BuyTradeRequest(**request.get_json())
-    
+
     trade_service.execute_purchase_order(
         portfolio_id=data.portfolio_id,
         ticker=data.ticker,
         quantity=data.quantity,
     )
+
     db.session.commit()
-    return jsonify({'message': 'Purchase order executed successfully'}), 201
+    return jsonify({"message": "Purchase order executed successfully"}), 201
 
 
-@trade_bp.route('/sell', methods=['POST'])
+@trade_bp.route("/sell", methods=["POST"])
 def liquidate_investment():
     data = SellTradeRequest(**request.get_json())
-    
+
     trade_service.liquidate_investment(
         portfolio_id=data.portfolio_id,
         ticker=data.ticker,
         quantity=data.quantity,
-        sale_price=data.sale_price,
     )
+
     db.session.commit()
-    return jsonify({'message': 'Investment liquidated successfully'}), 200
+    return jsonify({"message": "Investment liquidated successfully"}), 200

@@ -6,7 +6,11 @@ load_dotenv()
 
 
 class Config:
-    pass
+    ALPHA_VANTAGE_API_KEY = os.environ.get("ALPHA_VANTAGE_API_KEY")
+
+    if not ALPHA_VANTAGE_API_KEY:
+        raise RuntimeError("ALPHA_VANTAGE_API_KEY not configured")
+
 
 
 class TestConfig(Config):
