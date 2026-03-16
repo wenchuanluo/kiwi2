@@ -43,7 +43,7 @@ def execute_purchase_order(portfolio_id: int, ticker: str, quantity: int):
             f"User associated with the portfolio ({portfolio_id}) does not exist."
         )
 
-    # CHANGED: use Alpha Vantage as the source of truth for live security data
+    
     quote = get_quote(ticker)
     if quote is None:
         raise TradeExecutionException(f"Unable to resolve ticker {ticker}")
@@ -61,7 +61,7 @@ def execute_purchase_order(portfolio_id: int, ticker: str, quantity: int):
     if user.balance < total_cost:
         raise InsufficientFundsError("Insufficient funds to complete the purchase.")
 
-    # CHANGED: use Investment.ticker instead of Investment.security
+    
     existing_investment = next(
         (inv for inv in portfolio.investments if inv.ticker == ticker),
         None,
@@ -131,7 +131,7 @@ def liquidate_investment(portfolio_id: int, ticker: str, quantity: int):
             f"User associated with the portfolio ({portfolio_id}) does not exist."
         )
 
-    # CHANGED: use Investment.ticker instead of inv.security.ticker
+    
     investment = next(
         (inv for inv in portfolio.investments if inv.ticker == ticker),
         None,

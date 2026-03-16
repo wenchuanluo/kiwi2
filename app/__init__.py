@@ -11,11 +11,10 @@ cache = Cache()
 
 
 def create_app(config):
-    # CHANGED: removed outer try/except from app factory
     app = Flask(__name__)
     app.config.from_object(config)
 
-    # register extensions
+    
     db.init_app(app)
     cache.init_app(app, config={
     "CACHE_TYPE": "SimpleCache",
@@ -42,13 +41,13 @@ def create_app(config):
     app.logger.addHandler(handler)
     app.logger.setLevel(logging.INFO)
 
-    # register blueprints
+    
     app.register_blueprint(user_bp, url_prefix="/users")
     app.register_blueprint(portfolio_bp, url_prefix="/portfolios")
     app.register_blueprint(security_bp, url_prefix="/securities")
     app.register_blueprint(trade_bp, url_prefix="/trade")
 
-    # CHANGED: added centralized error handler for user-related business errors
+    
     @app.errorhandler(UnsupportedUserOperationError)
     def handle_user_operation_error(error):
         db.session.rollback()
@@ -57,7 +56,7 @@ def create_app(config):
             "detail": str(error),
         }), 400
 
-    # CHANGED: added centralized error handler for portfolio-related business errors
+    
     @app.errorhandler(UnsupportedPortfolioOperationError)
     def handle_portfolio_operation_error(error):
         db.session.rollback()
@@ -66,7 +65,7 @@ def create_app(config):
             "detail": str(error),
         }), 400
 
-    # CHANGED: added centralized error handler for trade-related business errors
+    
     @app.errorhandler(TradeExecutionException)
     def handle_trade_execution_error(error):
         db.session.rollback()
@@ -75,7 +74,7 @@ def create_app(config):
             "detail": str(error),
         }), 400
 
-    # CHANGED: added centralized error handler for insufficient funds
+    
     @app.errorhandler(InsufficientFundsError)
     def handle_insufficient_funds_error(error):
         db.session.rollback()
@@ -84,7 +83,7 @@ def create_app(config):
             "detail": str(error),
         }), 400
 
-    # CHANGED: added centralized error handler for Pydantic validation errors
+    
     @app.errorhandler(ValidationError)
     def handle_validation_error(error):
         db.session.rollback()
@@ -93,7 +92,7 @@ def create_app(config):
             "detail": error.errors(),
         }), 422
 
-    # CHANGED: added fallback global error handler for unexpected exceptions
+    
     @app.errorhandler(HTTPException)
     def handle_http_exception(error):
         db.session.rollback()

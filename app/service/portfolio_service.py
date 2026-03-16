@@ -55,9 +55,6 @@ def delete_portfolio(portfolio_id: int):
     db.session.flush()
 
 
-# -----------------------------
-# Portfolio access control logic
-# -----------------------------
 
 def get_portfolio_access(portfolio_id: int, username: str) -> PortfolioSecurity | None:
     return db.session.query(PortfolioSecurity).filter_by(

@@ -29,7 +29,7 @@ class Investment(db.Model):
         lazy='selectin',
     )
 
-    # this is needed because PyLance cannot infer the constructor signature from SQLAlchemy's Mapped class
+    
     if TYPE_CHECKING:
 
         def __init__(
