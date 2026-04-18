@@ -2,71 +2,75 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-
-project_root = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(project_root))
 from typing import Generator
 
-import app.database as db
 import pytest
-from app.database import Base
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
 
-from app.models import Security, User
+# Ensure project root is importable
+project_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(project_root))
+
+from app import create_app
+from app.config import get_config
+from app.db import db
+
+from app.models.User import User
+from app.models.Security import Security
 
 
-@pytest.fixture(scope='session')
-def engine():
+@pytest.fixture(scope="function")
+def app():
     """
-    create an in-memory database that is available for use in the entire test session.
-    initialize the database with tables.
+    Create a Flask app configured for testing.
+    Uses the TestConfig which runs an in-memory SQLite database.
     """
-    eng = create_engine('sqlite+pysqlite:///:memory:', future=True, echo=False)
+    config = get_config("test")
+    app = create_app(config)
 
-    # initialize all database objects
-    Base.metadata.create_all(eng)
+    with app.app_context():
+        db.create_all()
+        seed_database()
 
-    yield eng
-    eng.dispose()
+        yield app
 
-
-@pytest.fixture(scope='session')
-def connection(engine):
-    with engine.connect() as conn:
-        yield conn
+        db.session.remove()
+        db.drop_all()
 
 
-@pytest.fixture(scope='function')
-def db_session(connection, monkeypatch) -> Generator[Session]:
-    trans = connection.begin()
-
-    TestingSessionLocal = sessionmaker(bind=connection, autoflush=False, autocommit=False, expire_on_commit=False)
-
-    session = TestingSessionLocal()
-    _populate_database(session)
-
-    monkeypatch.setattr(db, 'get_session', lambda: session, raising=True)
-
-    try:
-        yield session
-    finally:
-        trans.rollback()
-        session.close()
+@pytest.fixture(scope="function")
+def client(app):
+    """
+    Flask test client for route testing.
+    """
+    return app.test_client()
 
 
-def _populate_database(session):
-    try:
-        admin_user = User(username='admin', password='admin', firstname='Admin', lastname='User', balance=1000.00)
-        session.add(admin_user)
+@pytest.fixture(scope="function")
+def db_session(app) -> Generator:
+    """
+    Provide the database session for direct database assertions.
+    """
+    yield db.session
 
-        securities = [
-            Security(ticker='AAPL', issuer='Apple Inc.', price=150.00),
-            Security(ticker='GOOGL', issuer='Alphabet Inc.', price=2800.00),
-            Security(ticker='MSFT', issuer='Microsoft Corp.', price=300.00),
-        ]
-        session.add_all(securities)
-    except Exception:
-        session.rollback()
-    finally:
-        session.commit()
+
+def seed_database():
+    """
+    Insert baseline data used across tests.
+    """
+    admin = User(
+        username="admin",
+        password="password",
+        firstname="Admin",
+        lastname="User",
+        balance=10000.0,
+    )
+
+    securities = [
+        Security(ticker="AAPL", issuer="Apple Inc.", price=150.0),
+        Security(ticker="MSFT", issuer="Microsoft Corp.", price=300.0),
+        Security(ticker="GOOGL", issuer="Alphabet Inc.", price=2800.0),
+    ]
+
+    db.session.add(admin)
+    db.session.add_all(securities)
+    db.session.commit()

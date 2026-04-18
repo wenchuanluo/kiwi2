@@ -7,7 +7,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db import db
 
 if TYPE_CHECKING:
-    # imports that are used only for type checking to avoid circular dependencies
     from app.models import Portfolio, Security, User
 
 
