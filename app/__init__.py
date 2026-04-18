@@ -13,7 +13,8 @@ cache = Cache()
 def create_app(config):
     app = Flask(__name__)
     app.config.from_object(config)
-
+    if hasattr(config, "validate"):
+        config.validate()
     
     db.init_app(app)
     cache.init_app(app, config={

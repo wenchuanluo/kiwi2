@@ -10,7 +10,10 @@ import app.service.portfolio_service as portfolio_service
 import app.service.transaction_service as transaction_service
 import app.service.user_service as user_service
 from app.db import db
-from app.routes.domain.portfolio_schema import CreatePortfolioRequest
+from app.routes.domain.portfolio_schema import (
+    CreatePortfolioRequest,
+    PortfolioAccessRequest,
+)
 
 portfolio_bp = Blueprint('portfolio', __name__)
 
@@ -97,11 +100,7 @@ def get_portfolio_transactions(portfolio_id):
 @portfolio_bp.route('/<int:portfolio_id>/access', methods=['POST'])
 @require_auth
 def grant_portfolio_access(portfolio_id):
-    data = request.get_json()
-
-    username = data.get("username")
-    role = data.get("role")
-
+    payload = PortfolioAccessRequest(**request.get_json())
     portfolio = portfolio_service.get_portfolio_by_id(portfolio_id)
 
     if portfolio is None:
@@ -111,13 +110,14 @@ def grant_portfolio_access(portfolio_id):
 
     portfolio_service.grant_portfolio_access(
         portfolio_id=portfolio_id,
-        username=username,
-        role=role,
+        username=payload.username,
+        role=payload.role,
     )
 
     db.session.commit()
 
     return jsonify({"message": "Access granted successfully"}), 201
+    
 
 @portfolio_bp.route('/<int:portfolio_id>/access/<username>', methods=['DELETE'])
 @require_auth

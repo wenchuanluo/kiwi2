@@ -96,30 +96,20 @@ def execute_purchase_order(portfolio_id: int, ticker: str, quantity: int):
 
 def liquidate_investment(portfolio_id: int, ticker: str, quantity: int):
     """
-    Liquidate shares of a security from a portfolio at a given sale price.
+    Liquidate shares of a security from a portfolio using the current market price.
 
     Args:
         portfolio_id (int): The ID of the portfolio to sell from.
         ticker (str): The ticker symbol of the security to sell.
         quantity (int): The number of shares to sell.
-        sale_price (float): The price per share to use for the sale.
 
     Raises:
-        TradeExecutionException: If the portfolio, investment, or quantity is invalid.
+        TradeExecutionException: If the parameters, portfolio, investment, or quote are invalid.
     """
-    quote = get_quote(ticker)
-    if quote is None:
-        raise TradeExecutionException(f"Could not get current price for {ticker}")
-    
-    sale_price = quote.price
-    
     if portfolio_id is None or not ticker or not quantity or quantity <= 0:
         raise TradeExecutionException(
             f"Invalid liquidation parameters [portfolio_id={portfolio_id}, ticker={ticker}, quantity={quantity}]"
         )
-
-    if sale_price is None or sale_price <= 0:
-        raise TradeExecutionException(f"Invalid sale price: {sale_price}")
 
     portfolio = db.session.query(Portfolio).filter_by(id=portfolio_id).one_or_none()
     if not portfolio:
@@ -131,7 +121,14 @@ def liquidate_investment(portfolio_id: int, ticker: str, quantity: int):
             f"User associated with the portfolio ({portfolio_id}) does not exist."
         )
 
-    
+    quote = get_quote(ticker)
+    if quote is None:
+        raise TradeExecutionException(f"Could not get current price for {ticker}")
+
+    sale_price = quote.price
+    if sale_price is None or sale_price <= 0:
+        raise TradeExecutionException(f"Invalid sale price: {sale_price}")
+
     investment = next(
         (inv for inv in portfolio.investments if inv.ticker == ticker),
         None,

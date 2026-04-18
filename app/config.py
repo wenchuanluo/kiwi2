@@ -6,6 +6,8 @@ load_dotenv()
 
 
 class Config:
+    TESTING = False
+
     ALPHA_VANTAGE_API_KEY = os.environ.get("ALPHA_VANTAGE_API_KEY")
     COGNITO_REGION = os.environ.get("COGNITO_REGION")
     COGNITO_USER_POOL_ID = os.environ.get("COGNITO_USER_POOL_ID")
@@ -15,9 +17,11 @@ class Config:
         f"https://cognito-idp.{COGNITO_REGION}.amazonaws.com/"
         f"{COGNITO_USER_POOL_ID}/.well-known/jwks.json"
     )
-
-    if not ALPHA_VANTAGE_API_KEY:
-        raise RuntimeError("ALPHA_VANTAGE_API_KEY not configured")
+    
+    @classmethod
+    def validate(cls):
+        if not cls.TESTING and not cls.ALPHA_VANTAGE_API_KEY:
+            raise RuntimeError("ALPHA_VANTAGE_API_KEY not configured")
 
 
 class TestConfig(Config):
@@ -25,9 +29,19 @@ class TestConfig(Config):
     SQLALCHEMY_DATABASE_URI = "sqlite+pysqlite:///:memory:"
     SQLALCHEMY_ECHO = False
 
+    ALPHA_VANTAGE_API_KEY = "test-key"
+    COGNITO_REGION = "test-region"
+    COGNITO_USER_POOL_ID = "test-pool"
+    COGNITO_APP_CLIENT_ID = "test-client"
 
 class DevelopmentConfig(Config):
-    SQLALCHEMY_DATABASE_URI = "mysql+pymysql://root:412421517@localhost:3306/kiwilocal"
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or (
+        f"mysql+pymysql://{os.environ.get('DB_USER', '')}:"
+        f"{os.environ.get('DB_PASSWORD', '')}@"
+        f"{os.environ.get('DB_HOST', 'localhost')}:"
+        f"{os.environ.get('DB_PORT', '3306')}/"
+        f"{os.environ.get('DB_NAME', '')}"
+    )
     DEBUG = True
     SQLALCHEMY_ECHO = True
 
