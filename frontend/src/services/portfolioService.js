@@ -34,3 +34,8 @@ export async function deletePortfolio(portfolioId) {
   const response = await apiClient.delete(`/portfolios/${portfolioId}`);
   return response.data;
 }
+
+export async function getPortfolioTransactions(portfolioId) {
+  const response = await apiClient.get(`/portfolios/${portfolioId}/transactions`);
+  return response.data;
+}

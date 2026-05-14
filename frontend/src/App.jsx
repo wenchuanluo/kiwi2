@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginPage from "./components/LoginPage";
 import CallbackPage from "./components/CallbackPage";
 import Dashboard from "./components/Dashboard";
+import PortfolioDetail from "./components/PortfolioDetail";
 import ProtectedRoute from "./components/ProtectedRoute";
 import "./App.css";
 
@@ -16,6 +17,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/portfolios/:id"
+          element={
+            <ProtectedRoute>
+              <PortfolioDetail />
             </ProtectedRoute>
           }
         />
