@@ -1,6 +1,16 @@
+import { useState } from "react";
 import { logout } from "../services/authService";
+import PortfolioList from "./PortfolioList";
+import CreatePortfolioModal from "./CreatePortfolioModal";
 
 function Dashboard() {
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [refreshSignal, setRefreshSignal] = useState(0);
+
+  const handleCreated = () => {
+    setRefreshSignal((prev) => prev + 1);
+  };
+
   return (
     <div className="dashboard-page">
       <header className="dashboard-header">
@@ -15,14 +25,25 @@ function Dashboard() {
       </header>
 
       <main className="dashboard-content">
-        <div className="placeholder-card">
-          <h2>Portfolio management will be implemented next.</h2>
-          <p>
-            The authentication flow and API client are working. Next, we will
-            list portfolios and add create/delete operations.
-          </p>
+        <div className="dashboard-section">
+          <div className="dashboard-section-header">
+            <h2>My Portfolios</h2>
+            <button
+              className="primary-button"
+              onClick={() => setIsCreateOpen(true)}
+            >
+              + Create Portfolio
+            </button>
+          </div>
+          <PortfolioList refreshSignal={refreshSignal} />
         </div>
       </main>
+
+      <CreatePortfolioModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onCreated={handleCreated}
+      />
     </div>
   );
 }
