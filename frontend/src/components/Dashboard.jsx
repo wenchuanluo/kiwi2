@@ -18,8 +18,8 @@ function Dashboard() {
         <div className="placeholder-card">
           <h2>Portfolio management will be implemented next.</h2>
           <p>
-            The authentication flow is working. Next, we will connect this page
-            to the Flask backend API.
+            The authentication flow and API client are working. Next, we will
+            list portfolios and add create/delete operations.
           </p>
         </div>
       </main>
