@@ -6,6 +6,7 @@ import sys
 from logging.handlers import RotatingFileHandler
 from app.db import db
 from flask_caching import Cache
+from flask_cors import CORS
 
 cache = Cache()
 
@@ -21,6 +22,17 @@ def create_app(config):
     "CACHE_TYPE": "SimpleCache",
     "CACHE_DEFAULT_TIMEOUT": 300
     })
+    
+    CORS(app,
+         origins=["http://localhost:5173"],
+         allow_headers=["Authorization", "Content-Type"],
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+    
+    cache.init_app(app, config={
+        "CACHE_TYPE": "SimpleCache",
+        "CACHE_DEFAULT_TIMEOUT": 300
+    })
+    
     from app.routes import portfolio_bp, security_bp, trade_bp, user_bp
     from app.service.portfolio_service import (
     UnsupportedPortfolioOperationError,

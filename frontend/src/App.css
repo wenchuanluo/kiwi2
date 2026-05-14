@@ -1,0 +1,160 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background: #f6f8f7;
+  color: #13231b;
+}
+
+.login-page {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  min-height: 100vh;
+}
+
+.login-hero {
+  padding: 72px 96px;
+  background: linear-gradient(135deg, #08291f, #0d3d2d, #153f5a);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 48px;
+  font-weight: 700;
+  font-size: 24px;
+}
+
+.brand-icon {
+  font-size: 28px;
+}
+
+.login-hero h1 {
+  font-size: 52px;
+  line-height: 1.08;
+  max-width: 620px;
+  margin: 0 0 24px;
+}
+
+.login-hero p {
+  font-size: 18px;
+  color: #d5e9df;
+  max-width: 560px;
+  margin-bottom: 32px;
+}
+
+.login-hero ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.login-hero li {
+  margin-bottom: 16px;
+  color: #e7f7ee;
+}
+
+.login-hero li::before {
+  content: "✓";
+  color: #5ef29f;
+  margin-right: 12px;
+}
+
+.login-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+}
+
+.login-card,
+.status-card,
+.placeholder-card {
+  background: white;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 20px 60px rgba(20, 44, 31, 0.12);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+.login-logo {
+  font-size: 36px;
+  margin-bottom: 16px;
+}
+
+.login-card h2 {
+  margin: 0 0 12px;
+  font-size: 28px;
+}
+
+.login-card p {
+  margin-bottom: 28px;
+  color: #607269;
+}
+
+.primary-button,
+.secondary-button {
+  border: none;
+  border-radius: 12px;
+  padding: 14px 22px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary-button {
+  width: 100%;
+  background: #20c768;
+  color: white;
+  box-shadow: 0 8px 20px rgba(32, 199, 104, 0.25);
+}
+
+.secondary-button {
+  background: #edf5f0;
+  color: #143524;
+}
+
+.center-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashboard-page {
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+}
+
+.dashboard-header p {
+  margin: 8px 0 0;
+  color: #607269;
+}
+
+.dashboard-content {
+  max-width: 900px;
+}
