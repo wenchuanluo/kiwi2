@@ -22,7 +22,7 @@ portfolio_bp = Blueprint('portfolio', __name__)
 @require_auth
 def get_all_portfolios():
     portfolios = portfolio_service.get_all_portfolios()
-    return jsonify([portfolio.__to_dict__() for portfolio in portfolios]), 200
+    return jsonify([portfolio.__to_dict__(current_user=g.current_user) for portfolio in portfolios]), 200
 
 
 @portfolio_bp.route('/<int:portfolio_id>', methods=['GET'])
@@ -35,7 +35,7 @@ def get_portfolio(portfolio_id):
 
     ensure_can_view_portfolio(portfolio, g.current_user)
 
-    return jsonify(portfolio.__to_dict__()), 200
+    return jsonify(portfolio.__to_dict__(current_user=g.current_user)), 200
 
 
 @portfolio_bp.route('/user/<username>', methods=['GET'])
@@ -45,7 +45,7 @@ def get_portfolios_by_user(username):
     if user is None:
         return jsonify({'error': f'User {username} not found'}), 404
     portfolios = portfolio_service.get_portfolios_by_user(user)
-    return jsonify([portfolio.__to_dict__() for portfolio in portfolios]), 200
+    return jsonify([portfolio.__to_dict__(current_user=g.current_user) for portfolio in portfolios]), 200
 
 
 @portfolio_bp.route('/', methods=['POST'])

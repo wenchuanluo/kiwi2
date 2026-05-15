@@ -32,8 +32,31 @@ def create_portfolio(name: str, description: str, user: User) -> int:
 
 
 def get_portfolios_by_user(user: User) -> List[Portfolio]:
-    portfolios = db.session.query(Portfolio).filter_by(owner=user.username).all()
-    return portfolios
+    """
+    Return all portfolios the given user can access:
+    - Portfolios the user owns
+    - Portfolios the user has been granted access to (viewer or manager)
+    """
+    # Portfolios the user owns
+    owned = db.session.query(Portfolio).filter_by(owner=user.username).all()
+
+    # Portfolios the user has been granted access to via PortfolioSecurity
+    granted_rows = (
+        db.session.query(PortfolioSecurity.portfolio_id)
+        .filter_by(username=user.username)
+        .all()
+    )
+    granted_ids = [row[0] for row in granted_rows]
+
+    granted = []
+    if granted_ids:
+        granted = (
+            db.session.query(Portfolio)
+            .filter(Portfolio.id.in_(granted_ids))
+            .all()
+        )
+
+    return owned + granted
 
 
 def get_all_portfolios() -> List[Portfolio]:

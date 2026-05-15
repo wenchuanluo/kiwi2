@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { logout } from "../services/authService";
+import { getCurrentUsername } from "../services/userService";
 import PortfolioList from "./PortfolioList";
 import CreatePortfolioModal from "./CreatePortfolioModal";
 
 function Dashboard() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [refreshSignal, setRefreshSignal] = useState(0);
+  const currentUser = getCurrentUsername();
 
   const handleCreated = () => {
     setRefreshSignal((prev) => prev + 1);
@@ -16,7 +18,9 @@ function Dashboard() {
       <header className="dashboard-header">
         <div>
           <h1>Kiwi Dashboard</h1>
-          <p>You are signed in successfully.</p>
+          <p>
+            Signed in as <strong>{currentUser}</strong>
+          </p>
         </div>
 
         <button className="secondary-button" onClick={logout}>

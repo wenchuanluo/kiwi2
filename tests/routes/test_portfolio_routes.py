@@ -211,3 +211,139 @@ def test_revoke_portfolio_access_route_success(client, monkeypatch, app):
 
     assert response.status_code == 200
     assert response.json["message"] == "Access revoked successfully"
+    
+
+
+def _create_user(username):
+    user = User(
+        username=username,
+        password="pw",
+        firstname="Test",
+        lastname="User",
+        balance=100.0,
+    )
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+
+def test_get_portfolio_includes_my_role_as_owner(client, monkeypatch, app):
+    with app.app_context():
+        owner_username, portfolio_id = seed_portfolio("owner_role_owner")
+
+    mock_auth(monkeypatch, owner_username)
+
+    response = client.get(f"/portfolios/{portfolio_id}", headers=auth_headers())
+
+    assert response.status_code == 200
+    assert response.json["my_role"] == "owner"
+
+
+def test_get_portfolio_includes_my_role_as_viewer(client, monkeypatch, app):
+    with app.app_context():
+        owner_username, portfolio_id = seed_portfolio("owner_role_viewer")
+        _create_user("shared_viewer")
+
+        from app.service.portfolio_service import grant_portfolio_access
+        grant_portfolio_access(portfolio_id, "shared_viewer", "viewer")
+        db.session.commit()
+
+    mock_auth(monkeypatch, "shared_viewer")
+
+    response = client.get(f"/portfolios/{portfolio_id}", headers=auth_headers())
+
+    assert response.status_code == 200
+    assert response.json["my_role"] == "viewer"
+
+
+def test_get_portfolio_includes_my_role_as_manager(client, monkeypatch, app):
+    with app.app_context():
+        owner_username, portfolio_id = seed_portfolio("owner_role_manager")
+        _create_user("shared_manager")
+
+        from app.service.portfolio_service import grant_portfolio_access
+        grant_portfolio_access(portfolio_id, "shared_manager", "manager")
+        db.session.commit()
+
+    mock_auth(monkeypatch, "shared_manager")
+
+    response = client.get(f"/portfolios/{portfolio_id}", headers=auth_headers())
+
+    assert response.status_code == 200
+    assert response.json["my_role"] == "manager"
+
+
+def test_get_portfolios_by_user_includes_shared_portfolios(client, monkeypatch, app):
+    """
+    A user querying their own portfolios list should see both
+    portfolios they own AND portfolios shared with them.
+    """
+    with app.app_context():
+        owner_username, portfolio_id = seed_portfolio("owner_share_list")
+        _create_user("share_recipient")
+
+        from app.service.portfolio_service import grant_portfolio_access
+        grant_portfolio_access(portfolio_id, "share_recipient", "viewer")
+        db.session.commit()
+
+    mock_auth(monkeypatch, "share_recipient")
+
+    response = client.get(
+        "/portfolios/user/share_recipient", headers=auth_headers()
+    )
+
+    assert response.status_code == 200
+    assert isinstance(response.json, list)
+    assert len(response.json) == 1
+    assert response.json[0]["id"] == portfolio_id
+    assert response.json[0]["my_role"] == "viewer"
+
+
+def test_get_portfolios_by_user_includes_both_owned_and_shared(client, monkeypatch, app):
+    """
+    A user who has their own portfolios AND has been granted access to
+    another user's portfolios should see all of them in the listing.
+    """
+    with app.app_context():
+        # User A owns portfolio P1
+        owner_a_username, p1_id = seed_portfolio("owner_a_combined")
+
+        # User B owns portfolio P2 (we create directly via service)
+        user_b = _create_user("owner_b_combined")
+        p2_id = portfolio_service_create_helper(user_b, "B's Portfolio", "B's stuff")
+
+        # User B is granted viewer access on User A's P1
+        from app.service.portfolio_service import grant_portfolio_access
+        grant_portfolio_access(p1_id, "owner_b_combined", "viewer")
+        db.session.commit()
+
+    mock_auth(monkeypatch, "owner_b_combined")
+
+    response = client.get(
+        "/portfolios/user/owner_b_combined", headers=auth_headers()
+    )
+
+    assert response.status_code == 200
+    assert isinstance(response.json, list)
+    assert len(response.json) == 2
+
+    portfolio_ids = {p["id"] for p in response.json}
+    assert p1_id in portfolio_ids
+    assert p2_id in portfolio_ids
+
+    # Check roles are correctly assigned
+    role_by_id = {p["id"]: p["my_role"] for p in response.json}
+    assert role_by_id[p1_id] == "viewer"   # Shared from A
+    assert role_by_id[p2_id] == "owner"    # Owned by B
+
+
+def portfolio_service_create_helper(user, name, description):
+    """Helper to create a portfolio directly via service layer."""
+    import app.service.portfolio_service as portfolio_service
+    pid = portfolio_service.create_portfolio(
+        name=name,
+        description=description,
+        user=user,
+    )
+    db.session.commit()
+    return pid

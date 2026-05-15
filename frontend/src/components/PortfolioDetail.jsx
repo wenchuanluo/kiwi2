@@ -83,6 +83,9 @@ function PortfolioDetail() {
     return null;
   }
 
+  const role = portfolio.my_role;
+  const canTrade = role === "owner" || role === "manager";
+
   return (
     <div className="dashboard-page">
       <header className="dashboard-header">
@@ -90,7 +93,10 @@ function PortfolioDetail() {
           <Link to="/dashboard" className="back-link">
             ← Back to Dashboard
           </Link>
-          <h1>{portfolio.name}</h1>
+          <div className="portfolio-title-row">
+            <h1>{portfolio.name}</h1>
+            <RoleBadge role={role} />
+          </div>
           <p>{portfolio.description}</p>
         </div>
       </header>
@@ -103,8 +109,9 @@ function PortfolioDetail() {
 
           {portfolio.investments.length === 0 ? (
             <p className="muted">
-              No holdings yet. Use the Buy form below to purchase your first
-              shares.
+              {canTrade
+                ? "No holdings yet. Use the Buy form below to purchase your first shares."
+                : "No holdings yet."}
             </p>
           ) : (
             <table className="holdings-table">
@@ -126,22 +133,31 @@ function PortfolioDetail() {
           )}
         </div>
 
-        <div className="trade-grid">
-          <div className="dashboard-section">
-            <BuyForm
-              portfolioId={portfolio.id}
-              onTradeCompleted={handleTradeCompleted}
-            />
-          </div>
+        {canTrade ? (
+          <div className="trade-grid">
+            <div className="dashboard-section">
+              <BuyForm
+                portfolioId={portfolio.id}
+                onTradeCompleted={handleTradeCompleted}
+              />
+            </div>
 
-          <div className="dashboard-section">
-            <SellForm
-              portfolioId={portfolio.id}
-              holdings={portfolio.investments}
-              onTradeCompleted={handleTradeCompleted}
-            />
+            <div className="dashboard-section">
+              <SellForm
+                portfolioId={portfolio.id}
+                holdings={portfolio.investments}
+                onTradeCompleted={handleTradeCompleted}
+              />
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="dashboard-section">
+            <p className="muted">
+              You have <strong>view-only access</strong> to this portfolio.
+              Trading actions are not available.
+            </p>
+          </div>
+        )}
 
         <div className="dashboard-section">
           <div className="dashboard-section-header">
@@ -155,6 +171,14 @@ function PortfolioDetail() {
       </main>
     </div>
   );
+}
+
+function RoleBadge({ role }) {
+  if (!role || role === "none") return null;
+
+  const className = `role-badge role-${role}`;
+  const label = role.charAt(0).toUpperCase() + role.slice(1);
+  return <span className={className}>{label}</span>;
 }
 
 export default PortfolioDetail;
