@@ -74,6 +74,14 @@ def delete_portfolio(portfolio_id: int):
     if not portfolio:
         raise UnsupportedPortfolioOperationError(f"Portfolio with id {portfolio_id} does not exist")
 
+    # Prevent deletion when the portfolio still has holdings.
+    # The user must sell all holdings first.
+    if len(portfolio.investments) > 0:
+        raise UnsupportedPortfolioOperationError(
+            f"Cannot delete portfolio '{portfolio.name}' because it still contains holdings. "
+            f"Please sell all holdings before deleting the portfolio."
+        )
+
     db.session.delete(portfolio)
     db.session.flush()
 

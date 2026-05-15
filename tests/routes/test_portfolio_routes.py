@@ -347,3 +347,31 @@ def portfolio_service_create_helper(user, name, description):
     )
     db.session.commit()
     return pid
+
+
+
+def test_delete_portfolio_with_holdings_fails(client, monkeypatch, app):
+    """
+    Deleting a portfolio that still contains holdings must be rejected
+    with a 400 Bad Request.
+    """
+    from app.models.Investment import Investment
+
+    with app.app_context():
+        owner_username, portfolio_id = seed_portfolio("owner_delete_with_holdings")
+
+        # Add an investment (holding) to the portfolio
+        investment = Investment(
+            portfolio_id=portfolio_id,
+            ticker="AAPL",
+            quantity=5,
+        )
+        db.session.add(investment)
+        db.session.commit()
+
+    mock_auth(monkeypatch, owner_username)
+
+    response = client.delete(f"/portfolios/{portfolio_id}", headers=auth_headers())
+
+    assert response.status_code == 400
+    assert "holdings" in response.json["detail"].lower()
