@@ -8,7 +8,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db import db
 
 if TYPE_CHECKING:
-    # imports that are used only for type checking to avoid circular dependencies
     from app.models import Investment, Transaction, User
 
 
@@ -25,7 +24,6 @@ class Portfolio(db.Model):
 
     transactions: Mapped[List['Transaction']] = relationship('Transaction', back_populates='portfolio', lazy='selectin')
 
-    # this is needed because PyLance cannot infer the constructor signature from SQLAlchemy's Mapped class
     if TYPE_CHECKING:
 
         def __init__(
@@ -48,9 +46,9 @@ class Portfolio(db.Model):
                     'quantity': investment.quantity,
                 }
             )
-        return f'<Portfolio: id={self.id}; name={self.name}; description={self.description}; user={username}; investments={", ".join(investments)}>'
+        return f'<Portfolio: id={self.id}; name={self.name}; description={self.description}; user={username}; investments={", ".join(str(i) for i in investments)}>'
 
-    def __to_dict__(self):
+    def __to_dict__(self, current_user: str | None = None):
         investments = []
         for investment in self.investments:
             investments.append(
@@ -59,7 +57,7 @@ class Portfolio(db.Model):
                     'quantity': investment.quantity,
                 }
             )
-        return {
+        result = {
             'id': self.id,
             'name': self.name,
             'description': self.description,
@@ -67,3 +65,27 @@ class Portfolio(db.Model):
             'investments_count': len(self.investments),
             'investments': investments,
         }
+
+        if current_user is not None:
+            result['my_role'] = self._compute_role(current_user)
+
+        return result
+
+    def _compute_role(self, username: str) -> str:
+        """
+        Determine the given user's role for this portfolio.
+        Returns one of: 'owner', 'manager', 'viewer', 'none'.
+        """
+        if self.owner == username:
+            return 'owner'
+
+        # Delayed import to avoid circular dependency
+        from app.models import PortfolioSecurity
+        access = db.session.query(PortfolioSecurity).filter_by(
+            portfolio_id=self.id,
+            username=username,
+        ).one_or_none()
+
+        if access is None:
+            return 'none'
+        return access.role

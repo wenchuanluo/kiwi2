@@ -6,6 +6,6 @@ __pycache__/
 notes/
 .pytest_cache/
 .env
-app.*
+app.log*
 local/
 .ruff*
