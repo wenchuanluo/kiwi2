@@ -78,10 +78,20 @@ def delete_portfolio(portfolio_id):
 
     ensure_is_portfolio_owner(portfolio, g.current_user)
 
-    portfolio_service.delete_portfolio(portfolio_id)
-    db.session.commit()
+    try:
+        portfolio_service.delete_portfolio(portfolio_id)
+        db.session.commit()
 
-    return jsonify({'message': 'Portfolio deleted successfully'}), 200
+        return jsonify({
+            'message': 'Portfolio deleted successfully'
+        }), 200
+
+    except portfolio_service.UnsupportedPortfolioOperationError as e:
+        db.session.rollback()
+        return jsonify({
+            "error": "Bad Request",
+            "detail": str(e),
+        }), 400
 
 
 @portfolio_bp.route('/<int:portfolio_id>/transactions', methods=['GET'])

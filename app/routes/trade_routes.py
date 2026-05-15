@@ -22,15 +22,23 @@ def execute_purchase_order():
 
     ensure_can_manage_portfolio(portfolio, g.current_user)
 
-    trade_service.execute_purchase_order(
-        portfolio_id=data.portfolio_id,
-        ticker=data.ticker,
-        quantity=data.quantity,
-    )
+    try:
+        trade_service.execute_purchase_order(
+            portfolio_id=data.portfolio_id,
+            ticker=data.ticker,
+            quantity=data.quantity,
+        )
 
-    db.session.commit()
+        db.session.commit()
 
-    return jsonify({"message": "Purchase order executed successfully"}), 201
+        return jsonify({"message": "Purchase order executed successfully"}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            "error": "Bad Request",
+            "detail": str(e),
+        }), 400
 
 
 @trade_bp.route("/sell", methods=["POST"])
@@ -45,12 +53,20 @@ def liquidate_investment():
 
     ensure_can_manage_portfolio(portfolio, g.current_user)
 
-    trade_service.liquidate_investment(
-        portfolio_id=data.portfolio_id,
-        ticker=data.ticker,
-        quantity=data.quantity,
-    )
+    try:
+        trade_service.liquidate_investment(
+            portfolio_id=data.portfolio_id,
+            ticker=data.ticker,
+            quantity=data.quantity,
+        )
 
-    db.session.commit()
+        db.session.commit()
 
-    return jsonify({"message": "Investment liquidated successfully"}), 200
+        return jsonify({"message": "Investment liquidated successfully"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            "error": "Bad Request",
+            "detail": str(e),
+        }), 400

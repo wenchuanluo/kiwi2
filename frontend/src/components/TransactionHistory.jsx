@@ -88,7 +88,7 @@ function TransactionHistory({ portfolioId, refreshSignal }) {
               </span>
             </td>
             <td>{tx.quantity}</td>
-            <td>${tx.price.toFixed(2)}</td>
+            <td>${Number(tx.price).toFixed(2)}</td>
           </tr>
         ))}
       </tbody>

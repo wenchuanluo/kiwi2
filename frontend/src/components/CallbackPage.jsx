@@ -25,7 +25,7 @@ function CallbackPage() {
 
         navigate("/dashboard");
       } catch (error) {
-        console.error(error);
+        console.error("Authentication failed");
         setMessage("Sign in failed. Redirecting to login page...");
         setTimeout(() => navigate("/"), 2000);
       }

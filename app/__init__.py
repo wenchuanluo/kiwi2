@@ -28,10 +28,7 @@ def create_app(config):
          allow_headers=["Authorization", "Content-Type"],
          methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
     
-    cache.init_app(app, config={
-        "CACHE_TYPE": "SimpleCache",
-        "CACHE_DEFAULT_TIMEOUT": 300
-    })
+
     
     from app.routes import portfolio_bp, security_bp, trade_bp, user_bp
     from app.service.portfolio_service import (
